@@ -2,7 +2,7 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { CreateUserDto } from './dto/CreateUser.dto';
 import { UpdateUserDto } from './dto/UpdateUser.dto';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import mongoose, { Model } from 'mongoose';
 import { User } from 'src/schemas/User.schema';
 import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
@@ -19,13 +19,16 @@ export class UserService {
     return bcrypt.hash(password, salt);
   }
 
-  async createUser(createUserDto: CreateUserDto): Promise<User> {
+  async createUser(createUserDto: CreateUserDto): Promise<{ message: string; user: User }> {
     const hashedPassword = await this.hashPassword(createUserDto.password);
     const newUser = new this.userModel({
       ...createUserDto,
       password: hashedPassword,
     });
-    return newUser.save();
+    return {
+      message: 'User created successfully',
+      user: await newUser.save(),
+    }
   }
 
   //login user and return token
@@ -57,24 +60,43 @@ export class UserService {
     };
   }
 
-  async getUsers(): Promise<User[]> {
-    return this.userModel.find().exec();
+  async getUsers(){
+    return {
+      message:'Users fetched successfully',
+      users: await this.userModel.find()
+    }
   }
 
-  async getUserById(id: string): Promise<User | null> {
-    return this.userModel.findById(id).exec();
+  async getUserById(id: string){
+    const isValid = mongoose.Types.ObjectId.isValid(id);
+    if (!isValid) throw new Error('Invalid id');
+    const findUser = await this.userModel.findById(id);
+    if (!findUser) throw new Error('User not found');
+    return {
+      message:'User fetched successfully',
+      user: findUser
+  }
   }
 
-  async updateUser(
-    id: string,
-    updateUserDto: UpdateUserDto,
-  ): Promise<User | null> {
-    return this.userModel
-      .findByIdAndUpdate(id, updateUserDto, { new: true })
-      .exec();
+ async updateUser(id: string, updateUserDto: UpdateUserDto){
+    const isValid = mongoose.Types.ObjectId.isValid(id);
+    if (!isValid) throw new Error('Invalid id');
+    const findUser = await this.userModel.findById(id);
+    if (!findUser) throw new Error('User not found');
+    return {
+      message:'User updated successfully',
+      user: await this.userModel.findByIdAndUpdate(id, updateUserDto, { new: true })
+    }
   }
 
-  async deleteUser(id: string): Promise<User | null> {
-    return this.userModel.findByIdAndDelete(id).exec();
+  async deleteUser(id: string){
+    const isValid = mongoose.Types.ObjectId.isValid(id);
+    if (!isValid) throw new Error('Invalid id');
+    const findUser = await this.userModel.findById(id);
+    if (!findUser) throw new Error('User not found');
+    return {
+      message:'User deleted successfully',
+      user: await this.userModel.findByIdAndDelete(id)
+    }
   }
 }

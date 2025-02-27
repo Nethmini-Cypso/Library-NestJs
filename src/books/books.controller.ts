@@ -7,6 +7,10 @@ import {
   UseInterceptors,
   UploadedFiles,
   BadRequestException,
+  Get,
+  Param,
+  Put,
+  Delete,
 } from "@nestjs/common";
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
@@ -14,6 +18,7 @@ import * as path from 'path';
 import { BooksService } from "./books.service";
 import { PublishBookDto } from "./dto/PublishBook.dto";
 import * as Multer from 'multer';
+import { UpdateBookDto } from "./dto/UpdateBook.dto";
 
 @Controller('books')
 export class BooksController {
@@ -75,4 +80,26 @@ export class BooksController {
 
     return this.booksService.publishBook(bookData);
   }
+
+  @Get()
+  async getAllBooks() {
+    return this.booksService.getAllBooks();
+  }
+
+  @Get(':id')
+  async getBookById(@Param('id') id: string) {
+    return this.booksService.getBookById(id);
+  }
+
+  @Put(':id')
+  @UsePipes(new ValidationPipe())
+  async updateBook(@Param('id') id: string, @Body() updateBookDto: UpdateBookDto) {
+    return this.booksService.updateBook(id, updateBookDto);
+  }
+
+  @Delete(':id')
+  async deleteBook(@Param('id') id: string) {
+    return this.booksService.deleteBook(id);
+  }
+
 }
